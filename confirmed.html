@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email confirmed – Objectives</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html">Objectives</a>
+  <nav><a href="support.html">Support</a><a href="privacy.html">Privacy</a></nav>
+</header>
+<main>
+  <h1 id="title">Email confirmed</h1>
+  <p class="lead" id="message">Your email address is confirmed. Open Objectives on your phone and sign in with your email and password.</p>
+  <ul id="steps">
+    <li><strong>Creating a company?</strong> Signing in finishes creating it, and you are its admin.</li>
+    <li><strong>Joining with an invite code?</strong> Signing in puts you straight into your company's workspace.</li>
+  </ul>
+  <p><a href="objectives://" id="open">Open Objectives</a> · If the app does not open, find it on your home screen.</p>
+  <p class="muted">You can close this page.</p>
+</main>
+<footer>© 2026 Ariège · <a href="support.html">Support</a> · <a href="privacy.html">Privacy</a></footer>
+<script>
+  // Supabase sends the outcome in the address: tokens on success, or error details when a link is expired or already used.
+  (function () {
+    var params = new URLSearchParams(location.hash.replace(/^#/, '') + '&' + location.search.replace(/^\?/, ''));
+    var error = params.get('error_description') || params.get('error');
+    if (!error) return;
+    var reason = error.replace(/\+/g, ' ');
+    document.getElementById('title').textContent = 'This link did not work';
+    document.getElementById('message').textContent = reason.charAt(0).toUpperCase() + reason.slice(1) + '.';
+    document.getElementById('steps').innerHTML =
+      '<li>If you already confirmed this email, just open the app and sign in.</li>' +
+      '<li>Otherwise open the app and sign in with your email and password: it offers to send a new confirmation email.</li>' +
+      '<li>Still stuck? Email <a href="mailto:noas@ariege-paris.com">noas@ariege-paris.com</a> from the address you signed up with.</li>';
+  })();
+</script>
+</body>
+</html>
