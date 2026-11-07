@@ -27,6 +27,11 @@
   // Supabase sends the outcome in the address: tokens on success, or error details when a link is expired or already used.
   (function () {
     var params = new URLSearchParams(location.hash.replace(/^#/, '') + '&' + location.search.replace(/^\?/, ''));
+    // A password-reset link that lands here (this page is the project's Site URL) continues on the reset page.
+    if (params.get('type') === 'recovery') {
+      location.replace('reset.html' + location.search + location.hash);
+      return;
+    }
     var error = params.get('error_description') || params.get('error');
     if (!error) return;
     var reason = error.replace(/\+/g, ' ');

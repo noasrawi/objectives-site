@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Choose a new password – Objectives</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="site.css">
+<style>
+  form { display: grid; gap: 12px; max-width: 360px; margin: 18px 0 10px; }
+  label { display: grid; gap: 6px; font-weight: 600; }
+  input { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); }
+  button { font: inherit; font-weight: 600; padding: 12px 16px; border: 0; border-radius: 8px; background: var(--blue); color: #FFFFFF; cursor: pointer; }
+  button[disabled] { opacity: 0.6; cursor: default; }
+  .error { color: #D0342C; min-height: 1.5em; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html">Objectives</a>
+  <nav><a href="support.html">Support</a><a href="privacy.html">Privacy</a></nav>
+</header>
+<main>
+  <h1 id="title">Choose a new password</h1>
+  <p class="lead" id="message">Checking your link…</p>
+  <form id="form" class="hidden" novalidate>
+    <label>New password <input id="password" type="password" minlength="8" autocomplete="new-password" placeholder="At least 8 characters"></label>
+    <label>Repeat it <input id="again" type="password" minlength="8" autocomplete="new-password"></label>
+    <p class="error" id="error" aria-live="polite"></p>
+    <button id="save" type="submit">Save the new password</button>
+  </form>
+  <ul id="steps" class="hidden">
+    <li>Open Objectives on your phone, tap <strong>Sign in</strong>, then <strong>Forgot password?</strong> to get a fresh link.</li>
+    <li>Links work once and expire after a while, so use the newest email.</li>
+    <li>Still stuck? Email <a href="mailto:noas@ariege-paris.com">noas@ariege-paris.com</a> from the address you sign in with.</li>
+  </ul>
+  <p id="open" class="hidden"><a href="objectives://">Open Objectives</a> · If the app does not open, find it on your home screen.</p>
+  <p class="muted">You can close this page when you are done.</p>
+</main>
+<footer>© 2026 Ariège · <a href="support.html">Support</a> · <a href="privacy.html">Privacy</a></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script>
+<script>
+  // The app's "Forgot password?" sends people here. Supabase puts the outcome in the address: a short-lived session
+  // on success (so the new password can be saved), or error details when the link is expired or already used.
+  (function () {
+    var SUPABASE_URL = 'https://vupsaenbhihyzykvpzww.supabase.co';
+    var SUPABASE_KEY = 'sb_publishable_i99CvC80WuYusE42kmkkmQ_xzuYF4Sr'; // the public key the app ships with; access rules live on the server
+    var el = function (id) { return document.getElementById(id); };
+    var params = new URLSearchParams(location.hash.replace(/^#/, '') + '&' + location.search.replace(/^\?/, ''));
+    var ready = false;
+
+    function fail(reason) {
+      el('title').textContent = 'This link did not work';
+      el('message').textContent = reason;
+      el('form').classList.add('hidden');
+      el('steps').classList.remove('hidden');
+    }
+
+    var error = params.get('error_description') || params.get('error');
+    if (error) {
+      var reason = error.replace(/\+/g, ' ');
+      fail(reason.charAt(0).toUpperCase() + reason.slice(1) + '.');
+      return;
+    }
+    if (!window.supabase) {
+      fail('The page could not load. Check your connection and open the link again.');
+      return;
+    }
+
+    // The session stays in memory only: nothing about the account is kept in this browser afterwards.
+    var client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, detectSessionInUrl: true, flowType: 'implicit' } });
+
+    function showForm(session) {
+      if (ready) return;
+      ready = true;
+      var email = session && session.user && session.user.email;
+      el('message').textContent = email ? 'Type a new password for ' + email + '.' : 'Type a new password for your Objectives account.';
+      el('form').classList.remove('hidden');
+      el('password').focus();
+    }
+
+    client.auth.onAuthStateChange(function (event, session) {
+      if (session && (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) showForm(session);
+    });
+
+    var code = params.get('code');
+    var start = code ? client.auth.exchangeCodeForSession(code) : client.auth.getSession();
+    start.then(function (res) {
+      if (res.data && res.data.session) { showForm(res.data.session); return; }
+      // Give the auth listener a moment, then give up: nothing usable arrived in the address.
+      setTimeout(function () { if (!ready) fail('This link has expired or was already used.'); }, 1500);
+    }).catch(function () {
+      if (!ready) fail('This link has expired or was already used.');
+    });
+
+    el('form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var pw = el('password').value;
+      var again = el('again').value;
+      var errorBox = el('error');
+      if (pw.length < 8) { errorBox.textContent = 'Use at least 8 characters.'; return; }
+      if (pw !== again) { errorBox.textContent = 'The two passwords are not the same.'; return; }
+      errorBox.textContent = '';
+      el('save').disabled = true;
+      client.auth.updateUser({ password: pw }).then(function (res) {
+        if (res.error) {
+          el('save').disabled = false;
+          errorBox.textContent = res.error.message;
+          return;
+        }
+        el('title').textContent = 'Password changed';
+        el('message').textContent = 'Open Objectives and sign in with your email and the new password.';
+        el('form').classList.add('hidden');
+        el('open').classList.remove('hidden');
+        client.auth.signOut({ scope: 'local' });
+      });
+    });
+  })();
+</script>
+</body>
+</html>
